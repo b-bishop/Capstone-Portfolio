@@ -1,0 +1,70 @@
+---
+title: "Face and Object Recognition"
+author: "Melisa Holdway and Brandy Bishop"
+date: "May 28, 2016"
+output: html_document
+---
+The first thing we have to do is read the data.
+```{r}
+dat=read.csv("data.csv")
+```
+Next, we check the structure.
+```{r}
+str(dat)
+```
+From the structure we can see that Participants is an integer and we want is as a factor.
+```{r}
+dat$Participant<-as.factor(dat$Participant)
+```
+Now that we have changed Participants to a factor, lets check the mean and standard of the face and object conditions
+```{r}
+mean(dat$Scores[dat$Condition=="Face"])
+mean(dat$Scores[dat$Condition=="Object"])
+sd(dat$Scores[dat$Condition=="Face"])
+sd(dat$Scores[dat$Condition=="Object"])
+```
+These results show that the mean correct score for the face condition was 7.57, with a standard deviation of 1.4, while the object condition had a mean correct score of 6.89 and a standard deviation of 1.49. 
+Now, lets run our ANOVA.
+```{r}
+summary(aov(Scores~Condition+Error(Participant/Condition),data=dat))
+```
+From this, we can see that Condition had a significant effect F(1,34) = 4.39, p.< .05. 
+In order to make sure that we do not reject the null hypothesis in error, we will now run a t-test.
+```{r}
+t.test(dat$Scores[dat$"Condition"=="Face"],dat$Scores[dat$"Condition"=="Object"],var.equal=TRUE,paired=TRUE)
+```
+This shows that t(34) = 2.09, p. < .05 which confirms that the correct scores for faces is signifantly higher than the correct scores for objects, thus confirming the null hypothesis. 
+
+Lastly, we will graph our results using a bar graph. 
+```{r}
+library(ggplot2)
+library(gplots)
+library(dplyr)
+```
+```{r}
+temp<-dat%>%group_by(Condition)%>%summarize(means=mean(Scores),
+sems=sd(Scores)/sqrt(length(Scores)))
+f<-ggplot(temp,aes(x=factor(Condition),y=means))+
+geom_bar(stat="identity", color="black",
+fill=c("blue", "red"))+
+geom_errorbar(aes(ymax=means+sems,
+ymin=means-sems),
+width=.2)+
+ggtitle("Recognition Rates")+
+labs(x="Recognition Tasks",y="Mean Correct Responses")+
+scale_x_discrete(breaks=c("Face", "Object"),
+labels=c("Face", "Object"))+
+theme(plot.title=element_text(size=15,face="bold",vjust=.5))+
+theme(axis.title.x=element_text(size=12,face="bold",vjust=-.25))+
+theme(axis.title.y=element_text(size=12,face="bold",vjust=.25))+
+theme(axis.text.x=element_text(size=10,face="bold",
+color="black"))+
+theme(axis.text.y=element_text(size=10,face="bold",color="black"))+
+coord_cartesian(ylim=c(min(temp$means)-2*max(temp$sems),
+max(temp$means)+2*max(temp$sems)))+
+theme(panel.border=element_blank(),axis.line=element_line())+
+theme(panel.grid.major.x=element_blank())+
+theme(panel.grid.major.y=element_line(color="darkgrey"))+
+theme(panel.grid.minor.y=element_blank())
+f
+```
